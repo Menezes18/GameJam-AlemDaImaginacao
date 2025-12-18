@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcd598f95150fa94eb4e1af37f5a3e71, type: 3}
+  m_Name: CameraData
+  m_EditorClassIdentifier: Assembly-CSharp::CameraData
+  sensitivityX: 2
+  sensitivityY: 2
+  invertY: 0
+  minPitch: -35
+  maxPitch: 70
+  defaultDistance: 3.5
+  minDistance: 0.5
+  maxDistance: 6
+  distanceSmoothSpeed: 8
+  cameraOffset: {x: 0.44, y: 1.1, z: -5}
+  shoulderOffsetX: 0.5
+  shoulderOffsetY: 0.3
+  shoulderSwitchSpeed: 5
+  positionSmoothSpeed: 10
+  rotationSmoothSpeed: 8
+  clipRadius: 0.3
+  clipMask:
+    serializedVersion: 2
+    m_Bits: 1
+  autoRecenter: 1
+  recenterDelay: 2
+  recenterSpeed: 90
+  shakeIntensity: 0.15
+  shakeDuration: 0.3
+  shakeRecovery: 2.5
