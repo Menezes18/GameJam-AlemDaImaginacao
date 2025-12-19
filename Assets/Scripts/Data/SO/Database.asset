@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DatabasePlayer
   inputAccel: 10
   inputGravity: 10
-  gravity: -26
+  gravity: -20
   gravityGrounded: -0.1
   minMouseY: -38
   maxMouseX: 60
@@ -22,8 +22,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   cameraSphereRadius: 0.2
-  playerSpeed: 9
-  playerJumpHeight: 12.5
+  playerSpeed: 6
+  playerJumpHeight: 12
   playerAirSpeed: 24
   playerMaxAirSpeed: 99
   PlayerMask:

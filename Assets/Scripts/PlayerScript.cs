@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 
 public enum PlayerState
@@ -32,6 +33,7 @@ public class PlayerScript : MonoBehaviour
     [Header("Camera")]
     [SerializeField] private bool controlCamera = false;
     [SerializeField] private Transform _cam;
+    [SerializeField] private Transform _firstPersonLocation;
     [SerializeField] private Vector3 cameraOffset => cameraData.cameraOffset;
 
     [Header("State")]
@@ -168,6 +170,8 @@ public class PlayerScript : MonoBehaviour
         UpdateAnimator();
         ApplyGravity();
         MoveCharacter();
+
+        transform.rotation = Quaternion.Euler(0, _yaw, 0);
     }
 
     private void LateUpdate()
@@ -182,12 +186,6 @@ public class PlayerScript : MonoBehaviour
     {
         _raw = new Vector3(raw.x, 0f, raw.y);
         _input = new Vector3(input.x, 0f, input.y);
-
-        if (raw.y > 0.01f && _cam != null)
-        {
-            float camYaw = _cam.eulerAngles.y;
-            transform.rotation = Quaternion.Euler(0f, camYaw, 0f);
-        }
     }
 
     private void OnLook(Vector2 look)
@@ -195,17 +193,17 @@ public class PlayerScript : MonoBehaviour
         if (panel) return;
         if (!controlCamera) return;
 
-        float yawDelta = look.x * 0.01f;
-        float pitchDelta = -look.y * 0.01f;
+        float yawDelta = look.x * cameraData.sensitivityX;
+        float pitchDelta = -look.y * cameraData.sensitivityY;
 
         _yaw += yawDelta;
         _pitch += pitchDelta;
 
-        float minY = db != null ? db.minMouseY : -40f;
+        float minY = db != null ? db.minMouseY : -75f;
         float maxX = db != null ? db.maxMouseX : 75f;
         if (maxX <= minY)
         {
-            minY = -40f;
+            minY = -75f;
             maxX = 75f;
         }
         _pitch = Mathf.Clamp(_pitch, minY, maxX);
@@ -250,7 +248,7 @@ public class PlayerScript : MonoBehaviour
 
     private void ApplyGravity()
     {
-        float gravity = db != null ? db.gravity : -20f;
+        float gravity = db.gravity;
         _move += Vector3.up * gravity * Time.deltaTime;
     }
 
@@ -261,7 +259,7 @@ public class PlayerScript : MonoBehaviour
         _controller.Move(_move * Time.deltaTime);
         if (_controller.isGrounded)
         {
-            float grounded = db != null ? db.gravityGrounded : -1f;
+            float grounded = db.gravityGrounded;
             _move.y = grounded;
         }
     }
@@ -270,24 +268,8 @@ public class PlayerScript : MonoBehaviour
     #region Camera
     private void UpdateCameraPosition()
     {
-        Quaternion camRot = Quaternion.Euler(_pitch, _yaw, 0f);
-        _cam.rotation = camRot;
-
-        Vector3 targetPos = transform.position + camRot * cameraOffset;
-        Vector3 dir = targetPos - transform.position;
-        float maxDist = cameraOffset.magnitude;
-
-        LayerMask mask = db != null ? db.cameraColliderMash : default;
-        float radius = db != null ? db.cameraSphereRadius : 0.2f;
-        if (Physics.SphereCast(transform.position, radius, dir.normalized, out RaycastHit hit, maxDist, mask, QueryTriggerInteraction.Ignore))
-        {
-            float safeDist = Mathf.Clamp(hit.distance - radius, 0.1f, maxDist);
-            _cam.position = transform.position + dir.normalized * safeDist;
-        }
-        else
-        {
-            _cam.position = targetPos;
-        }
+        _cam.transform.position = _firstPersonLocation.position;
+        _cam.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
     }
     #endregion
 
@@ -319,7 +301,7 @@ public class PlayerScript : MonoBehaviour
         float spd = db.playerSpeed;
         _move = dir * spd;
         _move.y = vertical;
-        _move += Vector3.up * (db != null ? db.gravity : -20f);
+        _move += Vector3.up * db.gravity;
     }
 
     private void AerialBehaviour()
@@ -628,37 +610,37 @@ public class PlayerScript : MonoBehaviour
     #endregion
 
     #region Debug Gizmos
-    private void OnDrawGizmos()
-    {
-        if (_cam == null) return;
+    // private void OnDrawGizmos()
+    // {
+    //     if (_cam == null) return;
 
-        Vector3 origin = raycastOrigin != null ? raycastOrigin.position : _cam.position;
-        Vector3 direction = _cam.forward;
+    //     Vector3 origin = raycastOrigin != null ? raycastOrigin.position : _cam.position;
+    //     Vector3 direction = _cam.forward;
         
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawRay(origin, direction * interactionRange);
+    //     Gizmos.color = Color.yellow;
+    //     Gizmos.DrawRay(origin, direction * interactionRange);
         
-        if (_lastRaycastValid)
-        {
-            Gizmos.color = _lastRaycastHasInteractable ? Color.green : Color.red;
-            Gizmos.DrawRay(origin, direction * _lastRaycastHit.distance);
+    //     if (_lastRaycastValid)
+    //     {
+    //         Gizmos.color = _lastRaycastHasInteractable ? Color.green : Color.red;
+    //         Gizmos.DrawRay(origin, direction * _lastRaycastHit.distance);
             
-            Gizmos.color = _lastRaycastHasInteractable ? Color.green : Color.red;
-            Gizmos.DrawWireSphere(_lastRaycastHit.point, 0.1f);
+    //         Gizmos.color = _lastRaycastHasInteractable ? Color.green : Color.red;
+    //         Gizmos.DrawWireSphere(_lastRaycastHit.point, 0.1f);
             
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawRay(_lastRaycastHit.point, _lastRaycastHit.normal * 0.3f);
-        }
+    //         Gizmos.color = Color.cyan;
+    //         Gizmos.DrawRay(_lastRaycastHit.point, _lastRaycastHit.normal * 0.3f);
+    //     }
         
-        Gizmos.color = Color.white;
-        Gizmos.DrawWireSphere(origin, 0.05f);
+    //     Gizmos.color = Color.white;
+    //     Gizmos.DrawWireSphere(origin, 0.05f);
         
-        if (raycastOrigin != null && _cam != null)
-        {
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawLine(origin, _cam.position);
-        }
-    }
+    //     if (raycastOrigin != null && _cam != null)
+    //     {
+    //         Gizmos.color = Color.magenta;
+    //         Gizmos.DrawLine(origin, _cam.position);
+    //     }
+    // }
     #endregion
 
 }

@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bcd598f95150fa94eb4e1af37f5a3e71, type: 3}
   m_Name: CameraData
   m_EditorClassIdentifier: Assembly-CSharp::CameraData
-  sensitivityX: 2
-  sensitivityY: 2
+  sensitivityX: 4
+  sensitivityY: 4
   invertY: 0
-  minPitch: -35
+  minPitch: -70
   maxPitch: 70
   defaultDistance: 3.5
   minDistance: 0.5
