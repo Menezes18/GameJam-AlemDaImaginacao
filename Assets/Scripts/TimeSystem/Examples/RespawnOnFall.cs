@@ -69,7 +69,7 @@ public class RespawnOnFall : MonoBehaviour
         
         transform.rotation = Random.rotation;
         
-        Debug.Log($"[RespawnOnFall] {gameObject.name} respawnado em {newPosition}");
+        // Debug.Log($"[RespawnOnFall] {gameObject.name} respawnado em {newPosition}");
     }
     
     #endregion
