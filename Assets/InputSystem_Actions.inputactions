@@ -64,7 +64,16 @@
                     "name": "TimeControl",
                     "type": "Button",
                     "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Camera Switch",
+                    "type": "Button",
+                    "id": "81a09cb0-1d15-4c3a-ad46-431b47b9fead",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -233,6 +242,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "TimeControl",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ca3113bb-949b-4af3-94f0-93475034df05",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Camera Switch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
