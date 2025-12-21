@@ -24,6 +24,16 @@ public class PickableItem : MonoBehaviour, IPickable
     {
         return canBeAnalyzed && !_isPickedUp;
     }
+    
+    public void OnInteract(PlayerScript player)
+    {
+        // Para objetos pickable, a interação é pegar o objeto
+        // O PlayerScript já cuida disso verificando CanPickUp primeiro
+        if (CanPickUp())
+        {
+            OnPickUp(player);
+        }
+    }
 
     public void OnPickUp(PlayerScript player)
     {

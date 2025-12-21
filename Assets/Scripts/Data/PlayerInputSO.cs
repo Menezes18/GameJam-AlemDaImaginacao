@@ -24,4 +24,7 @@ public class PlayerInputSO : ScriptableObject{
     public event Action<CallbackContext> OnAnalyze;
     public void Analyze(CallbackContext obj) {this.OnAnalyze?.Invoke(obj);}
     
+    public event Action<CallbackContext> OnTimeControl;
+    public void TimeControl(CallbackContext obj) {this.OnTimeControl?.Invoke(obj);}
+    
 }

@@ -25,6 +25,13 @@ public class AnalyzableItem : MonoBehaviour, IAnalyzable
     {
         return canBeAnalyzed;
     }
+    
+    public void OnInteract(PlayerScript player)
+    {
+        // Para objetos apenas analisáveis, OnInteract não faz nada
+        // Use F para analisar
+        // Este método precisa existir para implementar IInteractable
+    }
 
     public void OnAnalyze(PlayerScript player)
     {

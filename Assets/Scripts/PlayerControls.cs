@@ -25,6 +25,7 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO.OnLook += PlayerInputSO_OnLook;
         PlayerInputSO.OnPickUp += PlayerInputSO_OnPickUp;
         PlayerInputSO.OnAnalyze += PlayerInputSO_OnAnalyze;
+        PlayerInputSO.OnTimeControl += PlayerInputSO_OnTimeControl;
     }
 
     private void OnDestroy(){
@@ -34,6 +35,7 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO.OnLook -= PlayerInputSO_OnLook;
         PlayerInputSO.OnPickUp -= PlayerInputSO_OnPickUp;
         PlayerInputSO.OnAnalyze -= PlayerInputSO_OnAnalyze;
+        PlayerInputSO.OnTimeControl -= PlayerInputSO_OnTimeControl;
     }
     
     
@@ -134,6 +136,11 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO?.Analyze(ctx);
     }
 
+    public void OnTimeControl(CallbackContext ctx)
+    {
+        PlayerInputSO?.TimeControl(ctx);
+    }
+
     // Conecta a ação "Interact" (tecla E) ao sistema de pegar objetos
     public void OnInteract(CallbackContext ctx)
     {
@@ -154,6 +161,20 @@ public class PlayerControls : MonoBehaviour {
         if (playerScript.panel) return;
         if (obj.performed)
             PlayerControlsSO.Analyze();
+    }
+
+    private void PlayerInputSO_OnTimeControl(CallbackContext obj)
+    {
+        if (playerScript.panel) return;
+        // Verifica se há interação disponível (prioridade)
+        // Se o player estiver segurando objeto, não controla o tempo
+        if (playerScript != null && playerScript.IsHoldingObject)
+        {
+            return; // Não controla tempo enquanto segura objeto
+        }
+        
+        if (obj.performed)
+            PlayerControlsSO.TimeControl();
     }
     
 }

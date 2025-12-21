@@ -12,6 +12,7 @@ public class PlayerControlsSO : ScriptableObject {
     public event Action OnRoll;
     public event Action OnPickUp;
     public event Action OnAnalyze;
+    public event Action OnTimeControl;
 
     public void Move(Vector2 move, Vector2 raw) { OnMove?.Invoke(move, raw); }
     public void Look(Vector2 look) { OnLook?.Invoke(look); }
@@ -19,5 +20,6 @@ public class PlayerControlsSO : ScriptableObject {
     public void Roll() { OnRoll?.Invoke(); }
     public void PickUp() { OnPickUp?.Invoke(); }
     public void Analyze() { OnAnalyze?.Invoke(); }
+    public void TimeControl() { OnTimeControl?.Invoke(); }
 
 }

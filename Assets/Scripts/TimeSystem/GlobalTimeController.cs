@@ -1,13 +1,9 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 
 public class GlobalTimeController : MonoBehaviour
 {
     #region Fields
-    
-    [Header("Controls - Input System")]
-    [SerializeField] private InputAction toggleSlowMotionAction;
     
     [Header("Time Settings - Cycle Mode")]
     [SerializeField] private float[] timeScaleLevels = new float[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
@@ -17,9 +13,11 @@ public class GlobalTimeController : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private TimeField globalField;
+    [SerializeField] private PlayerControlsSO playerControlsSO; // Sistema de input unificado
     
-    [SerializeField] private GameObject player;
-    
+    private bool isListenerRegistered = false; // Previne duplicação de listeners
+    private float lastTimeControlTime = -1f; // Previne execução dupla no mesmo frame
+    private const float TIME_CONTROL_COOLDOWN = 0.1f; // Cooldown mínimo entre execuções
     
     #endregion
     
@@ -27,29 +25,17 @@ public class GlobalTimeController : MonoBehaviour
     
     private void Start()
     {
-        //SetupGlobalField();
         SetupInputSystem();
-        
         currentLevelIndex = timeScaleLevels.Length - 1;
         ApplyTimeScale(timeScaleLevels[currentLevelIndex]);
     }
     
-    private void OnEnable()
-    {
-        toggleSlowMotionAction?.Enable();
-    }
-    
-    private void OnDisable()
-    {
-        toggleSlowMotionAction?.Disable();
-    }
-    
     private void OnDestroy()
     {
-        // Limpar callback
-        if (toggleSlowMotionAction != null)
+        if (playerControlsSO != null && isListenerRegistered)
         {
-            toggleSlowMotionAction.performed -= OnToggleSlowMotion;
+            playerControlsSO.OnTimeControl -= OnTimeControl;
+            isListenerRegistered = false;
         }
     }
     
@@ -59,23 +45,42 @@ public class GlobalTimeController : MonoBehaviour
     
     private void SetupInputSystem()
     {
-        if (toggleSlowMotionAction == null || toggleSlowMotionAction.bindings.Count == 0)
+        // Previne registro duplicado
+        if (isListenerRegistered) return;
+        
+        // Busca PlayerControlsSO automaticamente se não foi atribuído
+        if (playerControlsSO == null)
         {
-            toggleSlowMotionAction = new InputAction("ToggleSlowMotion", binding: "<Keyboard>/e");
-            toggleSlowMotionAction.Enable();
+            playerControlsSO = Resources.FindObjectsOfTypeAll<PlayerControlsSO>()[0];
         }
         
-        toggleSlowMotionAction.performed += OnToggleSlowMotion;
+        if (playerControlsSO != null)
+        {
+            // Remove primeiro para garantir que não há duplicação
+            playerControlsSO.OnTimeControl -= OnTimeControl;
+            // Adiciona o listener
+            playerControlsSO.OnTimeControl += OnTimeControl;
+            isListenerRegistered = true;
+        }
+        else
+        {
+            Debug.LogError("[GlobalTimeController] PlayerControlsSO não encontrado! Controle de tempo não funcionará.");
+        }
     }
     
-    private void OnToggleSlowMotion(InputAction.CallbackContext context)
+    private void OnTimeControl()
     {
+        // Previne execução dupla no mesmo frame ou muito próxima
+        float currentTime = Time.unscaledTime;
+        if (currentTime - lastTimeControlTime < TIME_CONTROL_COOLDOWN)
+        {
+            return;
+        }
+        
+        lastTimeControlTime = currentTime;
         CycleTimeScale();
     }
     
-   
-    
-   
     #endregion
     
     #region Time Control

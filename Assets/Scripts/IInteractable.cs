@@ -6,6 +6,9 @@ public interface IInteractable
     bool CanInteract();
     bool CanPickUp();
     bool CanAnalyze();
+    
+    // Método genérico de interação (E)
+    void OnInteract(PlayerScript player);
 }
 
 // Objetos que podem ser pegos e segurados pelo jogador
