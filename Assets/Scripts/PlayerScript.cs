@@ -29,6 +29,7 @@ public class PlayerScript : MonoBehaviour
     [SerializeField] private Animator _animator;
     [SerializeField] private PlayerControlsSO PlayerControlsSO;
     [SerializeField] private Transform playerModel; // Transform do modelo visual do player (para rotacionar ao deitar)
+    [SerializeField] private Transform spawnPoint; // Ponto onde o player vai se posicionar ao dormir
 
     [Header("2.5D Camera System")]
     [SerializeField] private Transform _cam;
@@ -436,6 +437,26 @@ public class PlayerScript : MonoBehaviour
     private void OnStatusChanged(PlayerStatus oldStatus, PlayerStatus newStatus)
     {
         Debug.Log($"🔄 [STATUS] {oldStatus} → {newStatus}");
+    }
+
+    public void RespawnPlayer()
+    {
+        if (spawnPoint != null)
+        {
+            _controller.enabled = false;
+            transform.position = spawnPoint.position;
+            _controller.enabled = true;
+            State = PlayerState.Default;
+            Status = PlayerStatus.Default;
+            _move = Vector3.zero;
+            _inertia = Vector3.zero;
+            WorldManager.Instance.ForceChangeToRealWorld();
+            Debug.Log("✅ [RESPAWN] Player respawned at spawn point.");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ [RESPAWN] Spawn point not set. Cannot respawn player.");
+        }
     }
     
     #endregion

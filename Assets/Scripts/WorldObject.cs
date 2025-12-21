@@ -22,7 +22,7 @@ public class WorldObject : MonoBehaviour
     private List<Renderer> objectRenderers;
     private List<Collider> objectColliders;
 
-    private void Awake()
+    virtual protected void Awake()
     {
         objectRenderers = GetComponentsInChildren<Renderer>().ToList();
         objectColliders = GetComponentsInChildren<Collider>().ToList();
@@ -44,7 +44,7 @@ public class WorldObject : MonoBehaviour
         UpdateState(newWorld);
     }
 
-    private void UpdateState(WorldManager.WorldState currentWorld)
+    virtual protected void UpdateState(WorldManager.WorldState currentWorld)
     {
         bool exists = DoesExistInWorld(currentWorld);
 
@@ -67,7 +67,7 @@ public class WorldObject : MonoBehaviour
 
     }
 
-    private bool DoesExistInWorld(WorldManager.WorldState world)
+    protected bool DoesExistInWorld(WorldManager.WorldState world)
     {
         switch (existenceRule)
         {
