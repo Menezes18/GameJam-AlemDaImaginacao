@@ -23,7 +23,7 @@ MonoBehaviour:
     m_Bits: 1
   cameraSphereRadius: 0.2
   playerSpeed: 6
-  playerJumpHeight: 12
+  playerJumpHeight: 8
   playerAirSpeed: 24
   playerMaxAirSpeed: 99
   PlayerMask:

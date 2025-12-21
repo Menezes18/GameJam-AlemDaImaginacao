@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections;
 
 public class BedInteraction : MonoBehaviour, IInteractable
@@ -23,6 +24,10 @@ public class BedInteraction : MonoBehaviour, IInteractable
     [SerializeField] private bool canInteract = true;
     [SerializeField] private bool canPickUp = false;
     [SerializeField] private bool canAnalyze = false;
+    
+    [Header("Events")]
+    [SerializeField] private UnityEvent onPlayerEnterBed;
+    [SerializeField] private UnityEvent onPlayerExitBed;
     
     #endregion
     
@@ -87,9 +92,12 @@ public class BedInteraction : MonoBehaviour, IInteractable
         }
         else
         {
-            player.MoveToPosition(targetPosition, targetRotation);
-            player.SetLyingDown(true);
+        player.MoveToPosition(targetPosition, targetRotation);
+        player.SetLyingDown(true);
         }
+        
+        // Invoca evento de entrar na cama
+        onPlayerEnterBed?.Invoke();
         
         Debug.Log($"🛏️ [BED] Player está dormindo... (Pressione E para acordar)");
     }
@@ -150,6 +158,9 @@ public class BedInteraction : MonoBehaviour, IInteractable
         sleepingPlayer.MoveToPosition(finalWakeUpPosition, finalWakeUpRotation);
         
         sleepingPlayer.State = PlayerState.Default;
+        
+        // Invoca evento de sair da cama
+        onPlayerExitBed?.Invoke();
         
         sleepingPlayer = null;
         isPlayerSleeping = false;

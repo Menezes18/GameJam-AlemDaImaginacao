@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -37,6 +38,10 @@ public class WindowInteraction : MonoBehaviour, IInteractable
     [SerializeField] private bool canInteract = true;
     [SerializeField] private bool canPickUp = false;
     [SerializeField] private bool canAnalyze = false;
+    
+    [Header("Events")]
+    [SerializeField] private UnityEvent onWindowOpen;
+    [SerializeField] private UnityEvent onWindowClose;
     
     #endregion
     
@@ -163,6 +168,16 @@ public class WindowInteraction : MonoBehaviour, IInteractable
         
         isAnimating = false;
         
+        // Invoca eventos baseado no estado final
+        if (opening)
+        {
+            onWindowOpen?.Invoke();
+        }
+        else
+        {
+            onWindowClose?.Invoke();
+        }
+        
         if (player != null)
         {
             player.Status = PlayerStatus.Default;
@@ -218,6 +233,15 @@ public class WindowInteraction : MonoBehaviour, IInteractable
         else
         {
             UpdateWindowState(isOpen);
+            // Invoca eventos quando não usa animação
+            if (isOpen)
+            {
+                onWindowOpen?.Invoke();
+            }
+            else
+            {
+                onWindowClose?.Invoke();
+            }
             if (player != null)
             {
                 player.Status = PlayerStatus.Default;
@@ -260,6 +284,15 @@ public class WindowInteraction : MonoBehaviour, IInteractable
         else
         {
             UpdateWindowState(isOpen);
+            // Invoca eventos quando não usa animação
+            if (isOpen)
+            {
+                onWindowOpen?.Invoke();
+            }
+            else
+            {
+                onWindowClose?.Invoke();
+            }
             if (player != null)
             {
                 player.Status = PlayerStatus.Default;
@@ -298,6 +331,7 @@ public class WindowInteraction : MonoBehaviour, IInteractable
         else
         {
             UpdateWindowState(true);
+            onWindowOpen?.Invoke();
             if (player != null)
             {
                 player.Status = PlayerStatus.Default;
@@ -322,6 +356,7 @@ public class WindowInteraction : MonoBehaviour, IInteractable
         else
         {
             UpdateWindowState(false);
+            onWindowClose?.Invoke();
             if (player != null)
             {
                 player.Status = PlayerStatus.Default;

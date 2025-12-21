@@ -30,12 +30,8 @@ public class TimeField : MonoBehaviour
     
     private void Awake()
     {
-        Collider col = GetComponent<Collider>();
-        if (!col.isTrigger)
-        {
-            Debug.LogWarning($"TimeField em {gameObject.name} não está como Trigger. Configurando automaticamente.", this);
-            col.isTrigger = true;
-        }
+        // Não força mais o collider a ser trigger - permite colliders normais
+        // para que o jogador possa subir nos objetos mesmo com tempo parado
     }
     
     private void OnValidate()
@@ -52,30 +48,10 @@ public class TimeField : MonoBehaviour
         }
     }
     
-    private void OnTriggerEnter(Collider other)
+    private void FixedUpdate()
     {
-        if (!IsLayerInMask(other.gameObject.layer, affectedLayers))
-            return;
-        
-        TimeEntity entity = other.GetComponent<TimeEntity>();
-        if (entity != null)
-        {
-            entitiesInField.Add(entity);
-            entity.AddTimeField(this);
-        }
-    }
-    
-    private void OnTriggerExit(Collider other)
-    {
-        if (!IsLayerInMask(other.gameObject.layer, affectedLayers))
-            return;
-        
-        TimeEntity entity = other.GetComponent<TimeEntity>();
-        if (entity != null)
-        {
-            entitiesInField.Remove(entity);
-            entity.RemoveTimeField(this);
-        }
+        // Detecção manual usando Physics.Overlap para funcionar com colliders normais
+        DetectEntitiesInField();
     }
     
     #endregion
@@ -99,6 +75,80 @@ public class TimeField : MonoBehaviour
     #endregion
     
     #region Helpers
+    
+    private void DetectEntitiesInField()
+    {
+        Collider col = GetComponent<Collider>();
+        if (col == null) return;
+        
+        // Coleta todos os colliders dentro do campo de tempo
+        Collider[] collidersInField = null;
+        
+        if (col is BoxCollider boxCollider)
+        {
+            Vector3 center = transform.TransformPoint(boxCollider.center);
+            Vector3 halfExtents = Vector3.Scale(boxCollider.size * 0.5f, transform.lossyScale);
+            Quaternion rotation = transform.rotation;
+            collidersInField = Physics.OverlapBox(center, halfExtents, rotation, affectedLayers);
+        }
+        else if (col is SphereCollider sphereCollider)
+        {
+            Vector3 center = transform.TransformPoint(sphereCollider.center);
+            float radius = sphereCollider.radius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.y, transform.lossyScale.z);
+            collidersInField = Physics.OverlapSphere(center, radius, affectedLayers);
+        }
+        else if (col is CapsuleCollider capsuleCollider)
+        {
+            // Para CapsuleCollider, usamos uma aproximação com OverlapSphere
+            Vector3 center = transform.TransformPoint(capsuleCollider.center);
+            float radius = capsuleCollider.radius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            float height = capsuleCollider.height * transform.lossyScale.y;
+            collidersInField = Physics.OverlapSphere(center, Mathf.Max(radius, height * 0.5f), affectedLayers);
+        }
+        
+        if (collidersInField == null) return;
+        
+        // Cria um HashSet temporário dos objetos atualmente no campo
+        HashSet<TimeEntity> currentEntities = new HashSet<TimeEntity>();
+        
+        // Adiciona entidades que estão no campo agora
+        foreach (var collider in collidersInField)
+        {
+            if (collider == null || collider == col) continue; // Ignora o próprio collider do TimeField
+            
+            TimeEntity entity = collider.GetComponent<TimeEntity>();
+            if (entity != null)
+            {
+                currentEntities.Add(entity);
+                
+                // Se a entidade não estava no campo antes, adiciona
+                if (!entitiesInField.Contains(entity))
+                {
+                    entitiesInField.Add(entity);
+                    entity.AddTimeField(this);
+                }
+            }
+        }
+        
+        // Remove entidades que não estão mais no campo
+        HashSet<TimeEntity> entitiesToRemove = new HashSet<TimeEntity>();
+        foreach (var entity in entitiesInField)
+        {
+            if (entity == null || !currentEntities.Contains(entity))
+            {
+                entitiesToRemove.Add(entity);
+            }
+        }
+        
+        foreach (var entity in entitiesToRemove)
+        {
+            entitiesInField.Remove(entity);
+            if (entity != null)
+            {
+                entity.RemoveTimeField(this);
+            }
+        }
+    }
     
     private bool IsLayerInMask(int layer, LayerMask mask)
     {

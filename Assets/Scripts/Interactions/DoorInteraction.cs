@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 
 public class DoorInteraction : MonoBehaviour, IInteractable
@@ -19,6 +20,10 @@ public class DoorInteraction : MonoBehaviour, IInteractable
     [SerializeField] private bool canInteract = true;
     [SerializeField] private bool canPickUp = false;
     [SerializeField] private bool canAnalyze = false;
+    
+    [Header("Events")]
+    [SerializeField] private UnityEvent onDoorOpen;
+    [SerializeField] private UnityEvent onDoorClose;
     
     #endregion
     
@@ -80,6 +85,16 @@ public class DoorInteraction : MonoBehaviour, IInteractable
         if (doorTrigger != null)
         {
             doorTrigger.enabled = enableTriggerOnOpen && isOpen;
+        }
+        
+        // Invoca eventos baseado no estado final
+        if (isOpen)
+        {
+            onDoorOpen?.Invoke();
+        }
+        else
+        {
+            onDoorClose?.Invoke();
         }
         
         if (currentInteractingPlayer != null)

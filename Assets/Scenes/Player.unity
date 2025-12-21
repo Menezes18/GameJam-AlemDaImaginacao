@@ -603,7 +603,7 @@ GameObject:
   m_Component:
   - component: {fileID: 114016991}
   m_Layer: 9
-  m_Name: GameObject
+  m_Name: TransformDormir
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1236,7 +1236,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &248804830
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1291,7 +1291,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -1362,8 +1362,8 @@ Transform:
   m_GameObject: {fileID: 248804829}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 20.27, y: 31.86, z: 6.73}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 22.92, y: 35.88, z: -1.15}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1380,12 +1380,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4af3ef38a9c632b41bda297049c99f94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RespawnOnFall
-  minHeight: -20.92
-  respawnHeight: 26.86
+  respawnHeight: -26.86
   resetVelocity: 1
-  randomPosition: 1
+  resetRotation: 1
+  randomPosition: 0
   randomRangeX: 5
   randomRangeZ: 5
+  respawnTimer: 5
+  useLocalTime: 1
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1544,7 +1546,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &368162291
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6369,7 +6371,7 @@ Transform:
   m_GameObject: {fileID: 368162290}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 1.98, y: 1.45, z: 11.9}
+  m_LocalPosition: {x: 20.21, y: -0.8, z: -7.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7360,7 +7362,7 @@ GameObject:
   m_Component:
   - component: {fileID: 537879355}
   m_Layer: 9
-  m_Name: PortaB
+  m_Name: JanelaB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7747,7 +7749,7 @@ GameObject:
   m_Component:
   - component: {fileID: 570739744}
   m_Layer: 9
-  m_Name: GameObject (1)
+  m_Name: TransformSair
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7884,7 +7886,7 @@ MonoBehaviour:
   - 0.75
   - 1
   globalField: {fileID: 1286857450}
-  playerControlsSO: {fileID: 0}
+  playerControlsSO: {fileID: 11400000, guid: 99159be742de84a4fafafdd008408dc4, type: 2}
 --- !u!4 &947452813
 Transform:
   m_ObjectHideFlags: 0
@@ -8365,7 +8367,7 @@ GameObject:
   - component: {fileID: 1502428227}
   - component: {fileID: 1502428226}
   m_Layer: 9
-  m_Name: Cube
+  m_Name: PortaMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9017,7 +9019,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1546553074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9072,7 +9074,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -9143,8 +9145,8 @@ Transform:
   m_GameObject: {fileID: 1546553072}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 15.559999, y: 25.74, z: 6.73}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 18.21, y: 25.74, z: -1.1500002}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -9161,12 +9163,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4af3ef38a9c632b41bda297049c99f94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RespawnOnFall
-  minHeight: -20.92
   respawnHeight: 26.86
   resetVelocity: 1
-  randomPosition: 1
+  resetRotation: 1
+  randomPosition: 0
   randomRangeX: 5
   randomRangeZ: 5
+  respawnTimer: 5
+  useLocalTime: 1
 --- !u!43 &1568728556
 Mesh:
   m_ObjectHideFlags: 0
@@ -9430,7 +9434,7 @@ GameObject:
   - component: {fileID: 1759829964}
   - component: {fileID: 1759829968}
   m_Layer: 6
-  m_Name: Cube
+  m_Name: PegarObj
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9553,7 +9557,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1816167828}
   m_Layer: 9
-  m_Name: PortaA
+  m_Name: JanelaA
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9596,7 +9600,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1927041486
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9651,7 +9655,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -9722,8 +9726,8 @@ Transform:
   m_GameObject: {fileID: 1927041485}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.89, y: 29.67, z: 6.73}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 19.6, y: 31.63, z: 1.9}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -9740,12 +9744,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4af3ef38a9c632b41bda297049c99f94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RespawnOnFall
-  minHeight: -20.92
   respawnHeight: 26.86
   resetVelocity: 1
-  randomPosition: 1
+  resetRotation: 1
+  randomPosition: 0
   randomRangeX: 5
   randomRangeZ: 5
+  respawnTimer: 5
+  useLocalTime: 1
 --- !u!1 &2061609142
 GameObject:
   m_ObjectHideFlags: 0
@@ -9759,7 +9765,7 @@ GameObject:
   - component: {fileID: 2061609145}
   - component: {fileID: 2061609144}
   m_Layer: 9
-  m_Name: Cube
+  m_Name: JanelaMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9901,7 +9907,7 @@ GameObject:
   - component: {fileID: 2115928803}
   - component: {fileID: 2115928802}
   m_Layer: 9
-  m_Name: Cube
+  m_Name: JanelaMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
