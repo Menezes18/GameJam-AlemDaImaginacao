@@ -13,14 +13,14 @@ public class TelekinesisObject : MonoBehaviour
 
     public void OnGrab()
     {
-        _rb.useGravity = false;
+        
         _rb.constraints = RigidbodyConstraints.FreezeRotation;
         gameObject.layer = _ignorePlayerMask;
     }
 
     public void OnRelease()
     {
-        _rb.useGravity = true;
+        
         _rb.constraints = RigidbodyConstraints.None;
         gameObject.layer = _telekinesisLayerMask;
     }

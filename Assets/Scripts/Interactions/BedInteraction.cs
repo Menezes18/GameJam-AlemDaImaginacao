@@ -27,15 +27,24 @@ public class BedInteraction : MonoBehaviour, IInteractable
     [SerializeField] private bool canPickUp = false;
     [SerializeField] private bool canAnalyze = false;
     
+    [Header("Dream System")]
+    [SerializeField] private GameObject sleepingBodyModel; // Modelo do corpo dormindo que aparece na cama
+    [SerializeField] private float dreamTransitionDelay = 1f; // Delay antes de entrar no sonho
+    [SerializeField] private float bedSideOffset = 1.5f; // Distância ao lado da cama para ver o corpo dormindo
+    
     [Header("Events")]
+    [SerializeField] private UnityEvent onPlayerStartSleeping; // Evento quando o player começa a dormir (para configurar coisas no sonho)
     [SerializeField] private UnityEvent onPlayerEnterBed;
     [SerializeField] private UnityEvent onPlayerExitBed;
+    [SerializeField] private UnityEvent onPlayerEnterDream; // Evento quando entra no sonho
+    [SerializeField] private UnityEvent onPlayerExitDream; // Evento quando sai do sonho
     
     #endregion
     
     #region Private
     
     private bool isPlayerSleeping = false;
+    private bool isInDream = false; // Se o player está no mundo do sonho
     private PlayerScript sleepingPlayer = null;
     private float sleepTimer = 0f;
     private Vector3 originalPlayerPosition;
@@ -82,6 +91,7 @@ public class BedInteraction : MonoBehaviour, IInteractable
         isPlayerSleeping = true;
         sleepingPlayer = player;
         sleepTimer = sleepDuration;
+        isInDream = false;
         
         Vector3 targetPosition = sleepPosition != null ? sleepPosition.position : customSleepPosition;
         Quaternion targetRotation = Quaternion.Euler(0f, customSleepRotationY, 0f);
@@ -99,6 +109,12 @@ public class BedInteraction : MonoBehaviour, IInteractable
         }
         
         onPlayerEnterBed?.Invoke();
+        
+        // Chama o evento quando começa a dormir (para configurar coisas no sonho)
+        onPlayerStartSleeping?.Invoke();
+        
+        // Inicia a transição para o sonho
+        StartCoroutine(EnterDreamSequence(player, targetPosition, targetRotation));
         
         Debug.Log($"🛏️ [BED] Player está dormindo... (Pressione E para acordar)");
     }
@@ -138,6 +154,127 @@ public class BedInteraction : MonoBehaviour, IInteractable
         
         Debug.Log($"☀️ [BED] Player acordou!");
         
+        // Se está no sonho, precisa sair do sonho primeiro
+        if (isInDream)
+        {
+            StartCoroutine(ExitDreamSequence());
+        }
+        else
+        {
+            // Acordar normalmente (ainda não entrou no sonho)
+            sleepingPlayer.SetLyingDown(false);
+            
+            Vector3 finalWakeUpPosition;
+            Quaternion finalWakeUpRotation;
+            
+            if (wakeUpPosition != null)
+            {
+                finalWakeUpPosition = wakeUpPosition.position;
+                finalWakeUpRotation = wakeUpPosition.rotation;
+            }
+            else
+            {
+                Vector3 offsetFromBed = (sleepingPlayer.transform.position - transform.position).normalized * 1.5f;
+                offsetFromBed.y = 0f;
+                finalWakeUpPosition = transform.position + offsetFromBed;
+                finalWakeUpRotation = originalPlayerRotation;
+            }
+            
+            sleepingPlayer.MoveToPosition(finalWakeUpPosition, finalWakeUpRotation);
+            sleepingPlayer.State = PlayerState.Default;
+            
+            onPlayerExitBed?.Invoke();
+            
+            sleepingPlayer = null;
+            isPlayerSleeping = false;
+            sleepTimer = 0f;
+        }
+    }
+    
+    #endregion
+    
+    #region Dream System
+    
+    private IEnumerator EnterDreamSequence(PlayerScript player, Vector3 bedPosition, Quaternion bedRotation)
+    {
+        // Aguarda a animação de dormir terminar
+        yield return new WaitForSeconds(dreamTransitionDelay);
+        
+        // Passo 1: Transporta o player para o lado da cama (no mundo real ainda)
+        // Calcula a posição ao lado da cama baseado no wakeUpPosition ou na posição da cama
+        Vector3 bedSidePosition;
+        Quaternion bedSideRotation;
+        
+
+        
+        // Ativa o modelo dormindo na cama quando o player é teleportado para fora
+        if (sleepingBodyModel != null)
+        {
+            sleepingBodyModel.transform.position = bedPosition;
+            sleepingBodyModel.transform.rotation = bedRotation;
+            sleepingBodyModel.SetActive(true);
+            Debug.Log($"🌙 [DREAM] Modelo dormindo ativado na cama");
+        }
+        
+        if (WorldManager.Instance != null && WorldManager.Instance.CurrentWorld != WorldManager.WorldState.DreamWorld)
+        {
+                WorldManager.Instance.ToggleWorld();
+        }
+        // Aguarda 1 segundo antes de entrar no sonho
+        yield return new WaitForSeconds(0.8f);
+        
+        // Passo 3: Transporta o player para o ponto de "acordou" no sonho (usa wakeUpPosition)
+        if (wakeUpPosition != null)
+        {
+
+            Vector3 directionToBed = (bedPosition - wakeUpPosition.position).normalized;
+            bedSidePosition = bedPosition + directionToBed * bedSideOffset;
+            bedSidePosition.y = wakeUpPosition.position.y; // Mantém a altura do wakeUpPosition
+            bedSideRotation = Quaternion.LookRotation(bedPosition - bedSidePosition);
+        }
+        else
+        {
+            // Calcula baseado na posição da cama
+            Vector3 offsetFromBed = (player.transform.position - bedPosition).normalized;
+            offsetFromBed.y = 0f;
+            bedSidePosition = bedPosition + offsetFromBed * bedSideOffset;
+            bedSideRotation = Quaternion.LookRotation(bedPosition - bedSidePosition);
+        }
+        
+        player.MoveToPosition(bedSidePosition, bedSideRotation);
+        player.State = PlayerState.Default; // Permite movimento/interação
+        Debug.Log($"🌙 [DREAM] Player apareceu ao lado da cama");
+        player.MoveToPosition(wakeUpPosition.position, wakeUpPosition.rotation);
+        isInDream = true;
+            
+        onPlayerEnterDream?.Invoke();
+            
+        Debug.Log($"🌙 [DREAM] Player entrou no sonho e apareceu na posição de acordou");
+
+    }
+    
+    private IEnumerator ExitDreamSequence()
+    {
+        if (sleepingPlayer == null) yield break;
+        
+        Debug.Log($"☀️ [DREAM] Saindo do sonho...");
+        
+        if (WorldManager.Instance != null && WorldManager.Instance.CurrentWorld != WorldManager.WorldState.RealWorld)
+        {
+            WorldManager.Instance.ToggleWorld();
+        }
+        
+        yield return new WaitForSeconds(0.1f); // Pequeno delay para a transição de mundo
+        
+        if (sleepingBodyModel != null)
+        {
+            sleepingBodyModel.SetActive(false);
+        }
+        
+        // Volta o player para a cama (posição de dormir)
+        Vector3 bedPosition = sleepPosition != null ? sleepPosition.position : customSleepPosition;
+        Quaternion bedRotation = Quaternion.Euler(0f, customSleepRotationY, 0f);
+        sleepingPlayer.MoveToPosition(bedPosition, bedRotation);
         sleepingPlayer.SetLyingDown(false);
         
         Vector3 finalWakeUpPosition;
@@ -157,14 +294,17 @@ public class BedInteraction : MonoBehaviour, IInteractable
         }
         
         sleepingPlayer.MoveToPosition(finalWakeUpPosition, finalWakeUpRotation);
-        
         sleepingPlayer.State = PlayerState.Default;
         
+        onPlayerExitDream?.Invoke();
         onPlayerExitBed?.Invoke();
         
+        isInDream = false;
         sleepingPlayer = null;
         isPlayerSleeping = false;
         sleepTimer = 0f;
+        
+        Debug.Log($"☀️ [DREAM] Player acordou completamente!");
     }
     
     #endregion
@@ -190,9 +330,19 @@ public class BedInteraction : MonoBehaviour, IInteractable
     {
         if (!CanInteract()) return;
         
+        // Se está dormindo e no sonho, pode acordar interagindo com a cama
         if (isPlayerSleeping && sleepingPlayer == player)
         {
-            WakeUpPlayer();
+            // Se está no sonho, precisa interagir com a cama para acordar
+            if (isInDream)
+            {
+                WakeUpPlayer();
+            }
+            else
+            {
+                // Ainda não entrou no sonho, pode acordar normalmente
+                WakeUpPlayer();
+            }
         }
         else if (!isPlayerSleeping)
         {
@@ -205,6 +355,7 @@ public class BedInteraction : MonoBehaviour, IInteractable
     #region Public API
     
     public bool IsPlayerSleeping => isPlayerSleeping;
+    public bool IsInDream => isInDream;
     public float RemainingSleepTime => Mathf.Max(0f, sleepTimer);
     public float SleepProgress => isPlayerSleeping ? 1f - (sleepTimer / sleepDuration) : 0f;
     

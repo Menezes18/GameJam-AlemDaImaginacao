@@ -1,0 +1,30 @@
+feat: Adiciona sistema de puzzles múltiplos, sistema de luz e UI de interação
+
+Sistema de Puzzles:
+- Adiciona PuzzleManager para gerenciar múltiplos PuzzleSlots
+- PuzzleManager detecta quando todos os puzzles estão completos
+- Eventos Unity: onAllPuzzlesComplete, onPuzzleCompleted, onPuzzleUncompleted
+- Métodos públicos para verificar progresso e resetar puzzles
+
+Melhorias no PuzzleSlot:
+- Controles individuais de rotação (previewRotationX, Y, Z) para cada slot
+- Preview melhorado com visualização de eixos (setas coloridas)
+- Preview mostra o objeto esperado com rotação configurada, ignorando rotação atual na cena
+- Informações detalhadas no gizmo quando selecionado
+
+Sistema de Luz (LightSystem):
+- Controle de emissão de material e componentes Light
+- Controle separado de Base Color (desligado) e Emission Color (ligado)
+- Métodos públicos: SetEmissionEnabled, SetLightsEnabled, SetLightEnabled, ToggleLight
+- Métodos para controlar cor e intensidade mesmo quando desligado
+- UnityEvents: onLightEnabled e onLightDisabled
+
+Sistema de UI de Interação:
+- InteractionUI mostra "Aperte E para interagir" quando próximo de objetos interagíveis
+- Fade in/out suave usando CanvasGroup (durações configuráveis)
+- Atualização automática baseada no objeto interagível atual do player
+
+PlayerScript:
+- Adiciona propriedade pública CurrentInteractable para acesso externo
+- Status de interação (PlayerStatus.Interacting) já implementado nas interações
+
