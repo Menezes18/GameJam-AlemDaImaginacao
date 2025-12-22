@@ -26,5 +26,14 @@ public class PlayerInputSO : ScriptableObject{
     
     public event Action<CallbackContext> OnTimeControl;
     public void TimeControl(CallbackContext obj) {this.OnTimeControl?.Invoke(obj);}
+
+    public event Action<CallbackContext> OnTelekinesis;
+    public void Telekinesis(CallbackContext obj) {this.OnTelekinesis?.Invoke(obj);}
     
+    public event Action<CallbackContext> OnPointerPosition;
+    public void PointAction(CallbackContext obj) {this.OnPointerPosition?.Invoke(obj);}
+    
+    public event Action<CallbackContext> OnScrollAction;
+    public void ScrollAction(CallbackContext obj) {this.OnScrollAction?.Invoke(obj);}
+
 }

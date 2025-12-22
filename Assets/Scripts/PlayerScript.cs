@@ -9,6 +9,7 @@ public enum PlayerState
     Roll,
     Death,
     Sleeping,
+    Telekinesis
 }
 
 public enum PlayerStatus
@@ -48,8 +49,19 @@ public class PlayerScript : MonoBehaviour
     [SerializeField] private float interactionSphereRadius = 3f;
     [SerializeField] private bool showInteractionGizmo = true; 
     [SerializeField] private bool debugInteraction = false; 
-    
 
+    [Header("Telekinesis Settings")]
+    [SerializeField] private float _grabDistance = 6f;
+    [SerializeField] private float _moveSpeed = 12f;
+    [SerializeField] private float _depthSpeed = 2f;
+    [SerializeField] private LayerMask _telekinesisLayerMask = -1;
+    [SerializeField] private Vector2 _depthLimits = new Vector2(-1.5f, 1.5f);
+
+    private float _holdDistance;
+    private float _depthOffset;
+    private TelekinesisObject _currentTelekinesisObject;
+    private Vector3 _pointerPosition = Vector3.zero;
+    private Vector3 _scrollAmount = Vector3.zero;
     private float interactionRange => interactionSphereRadius;
     
     [Header("UI")]
@@ -157,6 +169,9 @@ public class PlayerScript : MonoBehaviour
         PlayerControlsSO.OnRoll += OnRoll;
         PlayerControlsSO.OnPickUp += OnPickUp;
         PlayerControlsSO.OnAnalyze += OnAnalyze;
+        PlayerControlsSO.OnTelekinesis += OnTelekinesis;
+        PlayerControlsSO.OnPointerAction += OnPointAction;
+        PlayerControlsSO.OnScrollAction += OnScroll;
     }
 
     private void OnDisable()
@@ -168,6 +183,9 @@ public class PlayerScript : MonoBehaviour
         PlayerControlsSO.OnRoll -= OnRoll;
         PlayerControlsSO.OnPickUp -= OnPickUp;
         PlayerControlsSO.OnAnalyze -= OnAnalyze;
+        PlayerControlsSO.OnTelekinesis -= OnTelekinesis;
+        PlayerControlsSO.OnPointerAction -= OnPointAction;
+        PlayerControlsSO.OnScrollAction -= OnScroll;
     }
 
     private void Update()
@@ -183,6 +201,7 @@ public class PlayerScript : MonoBehaviour
         
         AerialDetection();
 
+        TelekinesisBehaviour();
         PickUpBehaviour();
         AnalyzeBehaviour();
         StaggerBehaviour();
@@ -241,6 +260,39 @@ public class PlayerScript : MonoBehaviour
         State = PlayerState.Roll;
     }
     
+    private void OnTelekinesis(bool value)
+    {
+        if (panel) return;
+
+        if (!value)
+        {
+            State = PlayerState.Default;
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            State = PlayerState.Telekinesis;
+
+            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = true;
+        }
+
+    }
+    
+    private void OnScroll(Vector2 scroll)
+    {
+        if (State != PlayerState.Telekinesis) return;
+        _scrollAmount = scroll;
+    }
+
+    private void OnPointAction(Vector2 point)
+    {
+        if (State != PlayerState.Telekinesis) return;
+        _pointerPosition = point;
+        Debug.Log($"[POINT ACTION] {point}");
+    }
     #endregion
 
     #region 2.5D Movement System
@@ -309,7 +361,7 @@ public class PlayerScript : MonoBehaviour
 
     private void MoveCharacter()
     {
-        if (_controller == null || State == PlayerState.Death) return;
+        if (_controller == null || State == PlayerState.Death || State == PlayerState.Telekinesis) return;
 
         _controller.Move(_move * Time.deltaTime);
         if (_controller.isGrounded)
@@ -325,7 +377,7 @@ public class PlayerScript : MonoBehaviour
     
     private void AerialDetection()
     {
-        if (State == PlayerState.Death || State == PlayerState.Stagger || State == PlayerState.Roll) return;
+        if (State == PlayerState.Death || State == PlayerState.Stagger || State == PlayerState.Roll || State == PlayerState.Telekinesis ) return;
 
         if (_move.y > 0f) State = PlayerState.Ascend;
         else if (_move.y < (db != null ? db.gravityGrounded : -1f)) State = PlayerState.Descend;
@@ -408,6 +460,10 @@ public class PlayerScript : MonoBehaviour
         State = PlayerState.Default;
     }
     
+    private void TelekinesisBehaviour()
+    {
+        if (State != PlayerState.Telekinesis) return;
+    }
     #endregion
 
     #region Animation
@@ -544,7 +600,6 @@ public class PlayerScript : MonoBehaviour
             Debug.LogWarning($"⚠️ [DETECT] Nenhum interagível encontrado. Verifique LayerMask (valor: {interactableLayerMask.value}) e se os objetos têm IInteractable");
         }
     }
-    
 
     private IInteractable FindInteractableInHierarchy(Transform target)
     {
@@ -593,7 +648,6 @@ public class PlayerScript : MonoBehaviour
         return null;
     }
     
-
     private Vector3 GetInteractionSphereCenter()
     {
         if (interactionSphereCenter != null)
@@ -655,7 +709,6 @@ public class PlayerScript : MonoBehaviour
         _currentInteractable.OnInteract(this);
     }
     
-
     private void HandlePickUp(IPickable pickable)
     {
         Debug.Log($"🎯 [PICKUP] Objeto detectado: {(pickable as MonoBehaviour)?.gameObject.name}");
@@ -822,7 +875,6 @@ public class PlayerScript : MonoBehaviour
             transform.rotation = rotation;
         }
     }
-    
 
     public void SetLyingDown(bool lyingDown)
     {
@@ -844,6 +896,45 @@ public class PlayerScript : MonoBehaviour
         }
     }
     
+    #endregion
+
+    #region Telekinesis
+    private void TryGrab()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(_pointerPosition);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 6f, _telekinesisLayerMask))
+        {
+            _currentTelekinesisObject = hit.collider.GetComponent<TelekinesisObject>();
+            if (_currentTelekinesisObject == null) return;
+
+            _holdDistance = Vector3.Distance(_cam.position, hit.point);
+            _depthOffset = 0f;
+            _currentTelekinesisObject.OnGrab();
+        }
+    }
+    private void DragObject()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(_pointerPosition);
+
+        float scroll = _scrollAmount.y;
+        _depthOffset += scroll * _depthSpeed * Time.deltaTime;
+        _depthOffset = Mathf.Clamp(_depthOffset, _depthLimits.x, _depthLimits.y);
+
+        Vector3 targetPos = ray.GetPoint(_holdDistance);
+
+        targetPos.y += _depthOffset;
+
+        Vector3 dir = targetPos - _currentTelekinesisObject.transform.position;
+        _currentTelekinesisObject.Rigibody.linearVelocity = dir * _moveSpeed / _currentTelekinesisObject.Weight;
+    }
+    private void Release()
+    {
+        if (_currentTelekinesisObject == null) return;
+
+        _currentTelekinesisObject.OnRelease();
+        _currentTelekinesisObject = null;
+    }
     #endregion
 
     #region Debug Gizmos

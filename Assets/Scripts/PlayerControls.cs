@@ -26,6 +26,9 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO.OnPickUp += PlayerInputSO_OnPickUp;
         PlayerInputSO.OnAnalyze += PlayerInputSO_OnAnalyze;
         PlayerInputSO.OnTimeControl += PlayerInputSO_OnTimeControl;
+        PlayerInputSO.OnTelekinesis += PlayerInputSO_OnTelekinesis;
+        PlayerInputSO.OnScrollAction += PlayerInputSO_OnScrollAction;
+        PlayerInputSO.OnPointerPosition += PlayerInputSO_OnPointerPosition;
     }
 
     private void OnDestroy(){
@@ -36,6 +39,9 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO.OnPickUp -= PlayerInputSO_OnPickUp;
         PlayerInputSO.OnAnalyze -= PlayerInputSO_OnAnalyze;
         PlayerInputSO.OnTimeControl -= PlayerInputSO_OnTimeControl;
+        PlayerInputSO.OnTelekinesis -= PlayerInputSO_OnTelekinesis;
+        PlayerInputSO.OnScrollAction -= PlayerInputSO_OnScrollAction;
+        PlayerInputSO.OnPointerPosition -= PlayerInputSO_OnPointerPosition;
     }
     
     
@@ -99,6 +105,16 @@ public class PlayerControls : MonoBehaviour {
         
         _rawX = obj.x;
         _rawY = obj.y;
+    }
+    private void Telekinesis(bool value){
+        if (playerScript.panel) return;
+        PlayerControlsSO.Telekinesis(value);
+    }
+    private void PointAction(Vector2 point){
+        PlayerControlsSO.PointerPosition(point);
+    }
+    private void ScrollAction(Vector2 scroll){
+        PlayerControlsSO.ScrollAction(scroll);
     }
     public Vector2 GetInput()
     {
@@ -176,5 +192,20 @@ public class PlayerControls : MonoBehaviour {
         if (obj.performed)
             PlayerControlsSO.TimeControl();
     }
-    
+    private void PlayerInputSO_OnTelekinesis(CallbackContext obj)
+    {
+        if (playerScript.panel) return;
+        if (obj.performed || obj.canceled) Telekinesis(obj.performed);
+    }
+    private void PlayerInputSO_OnPointerPosition(CallbackContext obj)
+    {
+        if (playerScript.panel) return;
+        if (obj.performed || obj.canceled) PointAction(obj.ReadValue<Vector2>());
+    }
+    private void PlayerInputSO_OnScrollAction(CallbackContext obj)
+    {
+        if (playerScript.panel) return;
+        if (obj.performed || obj.canceled) ScrollAction(obj.ReadValue<Vector2>());
+        
+    }
 }
