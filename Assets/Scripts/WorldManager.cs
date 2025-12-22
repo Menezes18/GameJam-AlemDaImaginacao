@@ -32,17 +32,24 @@ public class WorldManager : MonoBehaviour
     {
         if (CurrentWorld == WorldState.RealWorld)
         {
-            SwitchToDreamWorld();
+            WorldTransitionUI.Instance.TransitionToDream(() =>
+            {
+                SwitchToDreamWorld();
+                OnWorldChanged?.Invoke(this, CurrentWorld);
+            });
         }
         else
         {
-            SwitchToRealWorld();
+            WorldTransitionUI.Instance.TransitionToReal(() =>
+            {
+                SwitchToRealWorld();
+                OnWorldChanged?.Invoke(this, CurrentWorld);
+            });
         }
-
-        OnWorldChanged?.Invoke(this, CurrentWorld);
     }
 
-    private void SwitchToDreamWorld()
+
+    virtual protected void SwitchToDreamWorld()
     {
         CurrentWorld = WorldState.DreamWorld;
         // Additional logic for switching to the dream world can be added here
@@ -54,5 +61,14 @@ public class WorldManager : MonoBehaviour
         CurrentWorld = WorldState.RealWorld;
         // Additional logic for switching to the real world can be added here
         Debug.Log("Switched to Real World");
+    }
+
+    public void ForceChangeToRealWorld()
+    {
+        if (CurrentWorld != WorldState.RealWorld)
+        {
+            SwitchToRealWorld();
+            OnWorldChanged?.Invoke(this, CurrentWorld);
+        }
     }
 }

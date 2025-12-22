@@ -12,6 +12,8 @@ public class BedInteraction : MonoBehaviour, IInteractable
     
     [Header("Sleep Position")]
     [SerializeField] private Transform sleepPosition;
+    [SerializeField] private Vector3 customSleepPosition = new Vector3(90f, 1.61f, -1.75f);
+    [SerializeField] private float customSleepRotationY = 24f;
     
     [Header("Wake Up Position")]
     [SerializeField] private Transform wakeUpPosition;
@@ -81,8 +83,8 @@ public class BedInteraction : MonoBehaviour, IInteractable
         sleepingPlayer = player;
         sleepTimer = sleepDuration;
         
-        Vector3 targetPosition = sleepPosition != null ? sleepPosition.position : transform.position;
-        Quaternion targetRotation = sleepPosition != null ? sleepPosition.rotation : transform.rotation;
+        Vector3 targetPosition = sleepPosition != null ? sleepPosition.position : customSleepPosition;
+        Quaternion targetRotation = Quaternion.Euler(0f, customSleepRotationY, 0f);
         
         player.State = PlayerState.Sleeping;
         
@@ -92,11 +94,10 @@ public class BedInteraction : MonoBehaviour, IInteractable
         }
         else
         {
-        player.MoveToPosition(targetPosition, targetRotation);
-        player.SetLyingDown(true);
+            player.MoveToPosition(targetPosition, targetRotation);
+            player.SetLyingDown(true);
         }
         
-        // Invoca evento de entrar na cama
         onPlayerEnterBed?.Invoke();
         
         Debug.Log($"🛏️ [BED] Player está dormindo... (Pressione E para acordar)");
@@ -159,7 +160,6 @@ public class BedInteraction : MonoBehaviour, IInteractable
         
         sleepingPlayer.State = PlayerState.Default;
         
-        // Invoca evento de sair da cama
         onPlayerExitBed?.Invoke();
         
         sleepingPlayer = null;

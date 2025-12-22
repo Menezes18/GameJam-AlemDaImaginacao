@@ -90,6 +90,8 @@ public class TimeEntity : MonoBehaviour
             ApplyTimeScaleToComponents();
         }
     }
+
+    public bool IsFrozen() => isFrozen;
     
     #endregion
     
