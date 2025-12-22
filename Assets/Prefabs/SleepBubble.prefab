@@ -140,9 +140,9 @@ MonoBehaviour:
   realWorldMaterial: {fileID: 2100000, guid: 90bcb7124aa2a4c9fa691f89a5dccf1b, type: 2}
   dreamWorldMaterial: {fileID: 2100000, guid: a699ee7aa164643fc830308b494cdc34, type: 2}
   floatSpeed: 1
-  lateralNoiseStrength: 0.5
+  lateralNoiseStrength: 0.75
   lateralNoiseSpeed: 1
-  lifetime: 5
+  lifetime: 15
   pushDamping: 1.5
 --- !u!65 &3387364401434148004
 BoxCollider:

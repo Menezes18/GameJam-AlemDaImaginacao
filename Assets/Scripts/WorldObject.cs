@@ -47,11 +47,12 @@ public class WorldObject : MonoBehaviour
     virtual protected void UpdateState(WorldManager.WorldState currentWorld)
     {
         bool exists = DoesExistInWorld(currentWorld);
+        Material targetMaterial = currentWorld == WorldManager.WorldState.RealWorld ? realWorldMaterial : dreamWorldMaterial;
 
         foreach (var objectRenderer in objectRenderers)
         {
             objectRenderer.enabled = exists;
-            if (exists)
+            if (exists && targetMaterial != null)
             {
                 objectRenderer.material =
                     currentWorld == WorldManager.WorldState.RealWorld
