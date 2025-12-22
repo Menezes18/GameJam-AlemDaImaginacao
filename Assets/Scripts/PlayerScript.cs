@@ -1,14 +1,14 @@
 using UnityEngine;
+using PrimeTween;
 
 public enum PlayerState
 {
     Default,
     Ascend,
     Descend,
-    Stagger,
-    Roll,
     Death,
     Sleeping,
+    Telekinesis
 }
 
 public enum PlayerStatus
@@ -49,7 +49,20 @@ public class PlayerScript : MonoBehaviour
     [SerializeField] private float interactionSphereRadius = 3f;
     [SerializeField] private bool showInteractionGizmo = true; 
     [SerializeField] private bool debugInteraction = false; 
-    
+
+    [Header("Telekinesis Settings")]
+    [SerializeField] private float _grabDistance = 6f;
+    [SerializeField] private float _moveSpeed = 12f;
+    [SerializeField] private float _depthSpeed = 0.25f;
+    [SerializeField] private LayerMask _telekinesisLayerMask = -1;
+    [SerializeField] private Vector2 _depthLimits = new Vector2(-1.5f, 1.5f);
+
+    private float _holdDistance;
+    private float _depthOffset;
+    private Tween _rotateTelekinesiTween;
+    private TelekinesisObject _currentTelekinesisObject;
+    private Vector3 _pointerPosition = Vector3.zero;
+    private Vector3 _scrollAmount = Vector3.zero;
 
     private float interactionRange => interactionSphereRadius;
     
@@ -68,7 +81,15 @@ public class PlayerScript : MonoBehaviour
             if (_state == value) return;
             OnStateChanged(_state, value);
             _state = value;
-            if (_animator != null) _animator.SetInteger(_STATE, (int)value);
+            if (_animator != null)
+            {
+                _animator.SetInteger(_STATE, (int)value);
+                Debug.Log($"✅ [ANIMATOR] Parâmetro 'state' definido para: {(int)value} ({(PlayerState)value})");
+            }
+            else
+            {
+                Debug.LogWarning("⚠️ [ANIMATOR] Tentativa de atualizar animator, mas _animator é null!");
+            }
         }
     }
 
@@ -103,20 +124,6 @@ public class PlayerScript : MonoBehaviour
     
     #endregion
 
-    #region Roll Variables
-    
-    private Vector3 _rollDir = Vector3.forward;
-    private float _rollTimer;
-    private float _rollCooldown;
-    
-    #endregion
-
-    #region Stagger Variables
-    
-    private float _staggerTimer;
-    
-    #endregion
-
     #region Animator Hashes
     
     private static readonly int _STATE = Animator.StringToHash("state");
@@ -134,6 +141,8 @@ public class PlayerScript : MonoBehaviour
     private float _analyzeTimer;
     private const float PICKUP_DURATION = 0.5f;
     private const float ANALYZE_DURATION = 2f;
+    private float _lastPickUpInputTime = -1f;
+    private const float PICKUP_INPUT_COOLDOWN = 0.2f;
     
     #endregion
 
@@ -155,9 +164,13 @@ public class PlayerScript : MonoBehaviour
         PlayerControlsSO.OnMove += OnMove;
         PlayerControlsSO.OnLook += OnLook;
         PlayerControlsSO.OnJump += OnJump;
-        PlayerControlsSO.OnRoll += OnRoll;
         PlayerControlsSO.OnPickUp += OnPickUp;
         PlayerControlsSO.OnAnalyze += OnAnalyze;
+        PlayerControlsSO.OnTelekinesis += OnTelekinesis;
+        PlayerControlsSO.OnLeftClickAction += OnLeftClick;
+        PlayerControlsSO.OnPointerAction += OnPointAction;
+        PlayerControlsSO.OnScrollAction += OnScroll;
+        PlayerControlsSO.OnAntClockwise += OnAntClockwise;
     }
 
     private void OnDisable()
@@ -166,9 +179,13 @@ public class PlayerScript : MonoBehaviour
         PlayerControlsSO.OnMove -= OnMove;
         PlayerControlsSO.OnLook -= OnLook;
         PlayerControlsSO.OnJump -= OnJump;
-        PlayerControlsSO.OnRoll -= OnRoll;
         PlayerControlsSO.OnPickUp -= OnPickUp;
         PlayerControlsSO.OnAnalyze -= OnAnalyze;
+        PlayerControlsSO.OnTelekinesis -= OnTelekinesis;
+        PlayerControlsSO.OnPointerAction -= OnPointAction;
+        PlayerControlsSO.OnLeftClickAction -= OnLeftClick;
+        PlayerControlsSO.OnScrollAction -= OnScroll;
+        PlayerControlsSO.OnAntClockwise -= OnAntClockwise;
     }
 
     private void Update()
@@ -178,23 +195,32 @@ public class PlayerScript : MonoBehaviour
         
         if (State == PlayerState.Sleeping)
         {
-            UpdateAnimator();
+            // Quando está dormindo, bloqueia qualquer rotação no transform principal
+            // A animação controla a rotação através do root motion ou do modelo visual
             return;
         }
         
         AerialDetection();
-
         PickUpBehaviour();
         AnalyzeBehaviour();
-        StaggerBehaviour();
-        RollBehaviour();
         AerialBehaviour();
-        DefaultBehaviour();
+        TelekinesisBehaviour();
+        DefaultBehaviour();    
 
-        UpdateAnimator();
         ApplyGravity();
         MoveCharacter();
         UpdateCharacterRotation();
+    }
+    
+    private void LateUpdate()
+    {
+        // Garante que quando está dormindo, nenhuma rotação seja aplicada no transform principal
+        // A animação deve controlar apenas o modelo visual (playerModel), não o transform principal
+        if (State == PlayerState.Sleeping)
+        {
+            // Mantém a rotação atual (não permite que seja alterada)
+            // Se necessário, você pode forçar uma rotação específica aqui
+        }
     }
     
     #endregion
@@ -203,8 +229,12 @@ public class PlayerScript : MonoBehaviour
     
     private void OnMove(Vector2 input, Vector2 raw)
     {
+        if (State == PlayerState.Telekinesis) return;
+
         _raw = new Vector3(raw.x, 0f, raw.y);
-        _input = new Vector3(input.x, 0f, input.y);
+        _input = new Vector3(input.x, 0, input.y);
+        _animator.SetFloat("x", input.x);
+        _animator.SetFloat("y", input.y);
     }
 
     private void OnLook(Vector2 look)
@@ -225,23 +255,57 @@ public class PlayerScript : MonoBehaviour
         InertiaCap = _inertia.magnitude;
     }
 
-    private void OnRoll()
+    private void OnTelekinesis(bool value)
     {
         if (panel) return;
-        if (State == PlayerState.Stagger || State == PlayerState.Death) return;
-        if (_rollCooldown > 0f) return;
-        if (State == PlayerState.Ascend || State == PlayerState.Descend) return;
 
-        Vector3 dir = CalculateCameraRelativeMovement();
-        if (dir.sqrMagnitude < 0.0001f)
+        if (!value)
         {
-            dir = transform.forward;
+            State = PlayerState.Default;
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            Release();
         }
-        _rollDir = dir.normalized;
-        _rollTimer = db != null ? db.playerRollDuration : 0.35f;
-        State = PlayerState.Roll;
+        else
+        {
+            State = PlayerState.Telekinesis;
+
+            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = true;
+        }
+    }
+
+    private void OnLeftClick(bool value)
+    {
+        if (State != PlayerState.Telekinesis) return;
+
+        if (value) TryGrab();
+
+        if (value && _currentTelekinesisObject != null) DragObject();
+
+        if (!value && _currentTelekinesisObject != null) Release();
     }
     
+    private void OnScroll(Vector2 scroll)
+    {
+        if (State != PlayerState.Telekinesis) return;
+        _scrollAmount = scroll;
+    }
+
+    private void OnPointAction(Vector2 point)
+    {
+        if (State != PlayerState.Telekinesis) return;
+        _pointerPosition = point;
+        // Debug.Log($"[POINT ACTION] {point}");
+    }
+    
+    private void OnAntClockwise()
+    {
+        if (State != PlayerState.Telekinesis) return;
+        RotateObject(false);
+    }
     #endregion
 
     #region 2.5D Movement System
@@ -295,9 +359,6 @@ public class PlayerScript : MonoBehaviour
     
     private void UpdateTimers()
     {
-        if (_rollTimer > 0f) _rollTimer -= Time.deltaTime;
-        if (_rollCooldown > 0f) _rollCooldown -= Time.deltaTime;
-        if (_staggerTimer > 0f) _staggerTimer -= Time.deltaTime;
         if (_pickUpTimer > 0f) _pickUpTimer -= Time.deltaTime;
         if (_analyzeTimer > 0f) _analyzeTimer -= Time.deltaTime;
     }
@@ -310,7 +371,7 @@ public class PlayerScript : MonoBehaviour
 
     private void MoveCharacter()
     {
-        if (_controller == null || State == PlayerState.Death) return;
+        if (_controller == null || State == PlayerState.Death || State == PlayerState.Telekinesis) return;
 
         _controller.Move(_move * Time.deltaTime);
         if (_controller.isGrounded)
@@ -326,7 +387,7 @@ public class PlayerScript : MonoBehaviour
     
     private void AerialDetection()
     {
-        if (State == PlayerState.Death || State == PlayerState.Stagger || State == PlayerState.Roll) return;
+        if (State == PlayerState.Death || State == PlayerState.Telekinesis ) return;
 
         if (_move.y > 0f) State = PlayerState.Ascend;
         else if (_move.y < (db != null ? db.gravityGrounded : -1f)) State = PlayerState.Descend;
@@ -367,70 +428,28 @@ public class PlayerScript : MonoBehaviour
         _move.y = vertical;
     }
 
-    private void RollBehaviour()
+    private void TelekinesisBehaviour()
     {
-        if (State != PlayerState.Roll) return;
+        if (State != PlayerState.Telekinesis) return;
 
-        float vertical = _move.y;
-        float t = Mathf.Clamp01(_rollTimer / Mathf.Max(0.0001f, (db != null ? db.playerRollDuration : 0.35f)));
-        float curve = db != null && db.playerRollCurve != null ? db.playerRollCurve.Evaluate(1f - t) : 1f - t;
-        float speed = (db != null ? db.playerRollSpeed : 6f) * curve;
-
-        Vector3 horizontal = _rollDir * speed;
-        _move = new Vector3(horizontal.x, vertical, horizontal.z);
-
-        if (_rollTimer <= 0f)
-        {
-            State = PlayerState.Default;
-            _rollCooldown = db != null ? db.playerRollCooldownDuration : 0.5f;
-        }
+        if (_currentTelekinesisObject != null) DragObject();
     }
-
-    private void StaggerBehaviour()
-    {
-        if (State != PlayerState.Stagger) return;
-
-        float vertical = _move.y;
-        Vector3 moveDirection = CalculateCameraRelativeMovement();
-
-        if (_staggerTimer > 0f) moveDirection = Vector3.zero;
-
-        float airSpeed = (db != null ? db.playerAirSpeed : 2.5f) * 0.6f;
-        moveDirection *= airSpeed * Time.deltaTime;
-
-        _inertia += moveDirection;
-        _inertia = Vector3.ClampMagnitude(_inertia, InertiaCap);
-
-        _move = _inertia;
-        _move.y = vertical;
-
-        if (_staggerTimer > 0f) return;
-        if (_controller != null && !_controller.isGrounded) return;
-        State = PlayerState.Default;
-    }
-    
     #endregion
 
-    #region Animation
-    
-    private void UpdateAnimator()
-    {
-        if (_animator != null)
-        {
-            _animator.SetFloat(_MOVEX, _input.x, 0.1f, Time.deltaTime);
-            _animator.SetFloat(_MOVEY, _input.z, 0.1f, Time.deltaTime);
-        }
-    }
-    
-    #endregion
 
     #region State Management
     
     private void OnStateChanged(PlayerState oldState, PlayerState newState)
     {
-        if (oldState == PlayerState.Roll)
+        Debug.Log($"🔄 [STATE] {oldState} → {newState}");
+        
+        if (_animator != null)
         {
-            _rollCooldown = db != null ? db.playerRollCooldownDuration : 0.5f;
+            Debug.Log($"🎬 [ANIMATOR] Atualizando parâmetro 'state' para: {(int)newState}");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ [ANIMATOR] Animator é null!");
         }
     }
 
@@ -466,7 +485,7 @@ public class PlayerScript : MonoBehaviour
     private void DetectInteractables()
     {
         if (_cam == null) return;
-        if (Status != PlayerStatus.Default) return;
+        if (Status != PlayerStatus.Default || State != PlayerState.Telekinesis) return;
 
         Vector3 sphereCenter = GetInteractionSphereCenter();
         
@@ -483,6 +502,11 @@ public class PlayerScript : MonoBehaviour
         foreach (Collider col in colliders)
         {
             if (col == null || col.gameObject == null) continue;
+            
+            if (_heldObject != null && col.gameObject == _heldObject)
+            {
+                continue;
+            }
             
             if (debugInteraction)
             {
@@ -565,7 +589,6 @@ public class PlayerScript : MonoBehaviour
             Debug.LogWarning($"⚠️ [DETECT] Nenhum interagível encontrado. Verifique LayerMask (valor: {interactableLayerMask.value}) e se os objetos têm IInteractable");
         }
     }
-    
 
     private IInteractable FindInteractableInHierarchy(Transform target)
     {
@@ -614,7 +637,6 @@ public class PlayerScript : MonoBehaviour
         return null;
     }
     
-
     private Vector3 GetInteractionSphereCenter()
     {
         if (interactionSphereCenter != null)
@@ -632,7 +654,19 @@ public class PlayerScript : MonoBehaviour
     private void OnPickUp()
     {
         if (panel) return;
-        if (State == PlayerState.Death || State == PlayerState.Stagger) return;
+        if (State == PlayerState.Death) return;
+        if (State == PlayerState.Telekinesis)
+        {
+            RotateObject(true);
+            return;
+        }
+
+        float currentTime = Time.time;
+        if (currentTime - _lastPickUpInputTime < PICKUP_INPUT_COOLDOWN)
+        {
+            return;
+        }
+        _lastPickUpInputTime = currentTime;
 
         if (State == PlayerState.Sleeping)
         {
@@ -676,7 +710,6 @@ public class PlayerScript : MonoBehaviour
         _currentInteractable.OnInteract(this);
     }
     
-
     private void HandlePickUp(IPickable pickable)
     {
         Debug.Log($"🎯 [PICKUP] Objeto detectado: {(pickable as MonoBehaviour)?.gameObject.name}");
@@ -689,6 +722,8 @@ public class PlayerScript : MonoBehaviour
         {
             _heldObject = pickable.GetGameObject();
             AttachObjectToPlayer(_heldObject);
+            _currentInteractable = null;
+            _lastPickUpInputTime = Time.time;
             Debug.Log($"✅ [PICKUP] Objeto pegado com sucesso: {_heldObject.name}");
         }
     }
@@ -697,7 +732,7 @@ public class PlayerScript : MonoBehaviour
     {
         if (panel) return;
         if (Status != PlayerStatus.Default) return;
-        if (State == PlayerState.Death || State == PlayerState.Stagger) return;
+        if (State == PlayerState.Death) return;
 
         if (_heldObject != null)
         {
@@ -726,20 +761,22 @@ public class PlayerScript : MonoBehaviour
     {
         if (Status != PlayerStatus.PickingUp) return;
 
-        _input = Vector3.zero;
-
         if (_pickUpTimer <= 0f)
         {
-            Status = PlayerStatus.Default;
-            Debug.Log("✅ [PICKUP] Objeto pego com sucesso!");
+            if (_heldObject != null)
+            {
+                Status = PlayerStatus.PickingUp;
+            }
+            else
+            {
+                Status = PlayerStatus.Default;
+            }
         }
     }
 
     private void AnalyzeBehaviour()
     {
         if (Status != PlayerStatus.Analyzing) return;
-
-        _input *= 0.3f;
 
         if (_analyzeTimer <= 0f)
         {
@@ -843,13 +880,16 @@ public class PlayerScript : MonoBehaviour
             transform.rotation = rotation;
         }
     }
-    
 
     public void SetLyingDown(bool lyingDown)
     {
+        if (State == PlayerState.Sleeping)
+        {
+            return;
+        }
+        
         Transform modelToRotate = playerModel;
         
-              
         if (modelToRotate != null)
         {
             if (lyingDown)
@@ -865,6 +905,65 @@ public class PlayerScript : MonoBehaviour
         }
     }
     
+    #endregion
+
+    #region Telekinesis
+    private void TryGrab()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(_pointerPosition);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 20f, _telekinesisLayerMask))
+        {
+            Debug.Log($"[GRABBED] {hit.collider.name}");
+            _currentTelekinesisObject = hit.collider.GetComponent<TelekinesisObject>();
+            if (_currentTelekinesisObject == null) return;
+
+            _holdDistance = Vector3.Distance(_cam.position, hit.point);
+            _depthOffset = 0f;
+            _currentTelekinesisObject.OnGrab();
+        }
+    }
+    
+    private void DragObject()
+    {
+        Ray ray = Camera.main.ScreenPointToRay(_pointerPosition);
+
+        float scroll = _scrollAmount.y;
+        _depthOffset += scroll * _depthSpeed * Time.deltaTime;
+        _depthOffset = Mathf.Clamp(_depthOffset, _depthLimits.x, _depthLimits.y);
+
+        Vector3 targetPos = ray.GetPoint(_holdDistance);
+
+        targetPos.z += _depthOffset;
+
+        Vector3 dir = targetPos - _currentTelekinesisObject.transform.position;
+
+        _currentTelekinesisObject.Rigibody.linearVelocity = dir * _moveSpeed / _currentTelekinesisObject.Weight;
+    }
+    
+    private void Release()
+    {
+        if (_currentTelekinesisObject == null) return;
+
+        _currentTelekinesisObject.OnRelease();
+        _currentTelekinesisObject = null;
+    }
+    
+    private void RotateObject(bool clockwise)
+    {
+        if (_currentTelekinesisObject == null) return;
+
+        Transform t = _currentTelekinesisObject.transform;
+
+        float currentZ = t.eulerAngles.z;
+
+        float targetZ = currentZ + (clockwise ? 25f : -25f);
+        targetZ = Mathf.Round(targetZ / 25f) * 25f;
+
+        _rotateTelekinesiTween.Stop();
+
+        _rotateTelekinesiTween = Tween.Rotation(t, new Vector3(0f, 0f, targetZ), 0.2f, Ease.OutSine);
+    }
     #endregion
 
     #region Debug Gizmos

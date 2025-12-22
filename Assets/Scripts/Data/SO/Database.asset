@@ -22,7 +22,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   cameraSphereRadius: 0.2
-  playerSpeed: 6
+  playerSpeed: 3
   playerJumpHeight: 8
   playerAirSpeed: 24
   playerMaxAirSpeed: 99
