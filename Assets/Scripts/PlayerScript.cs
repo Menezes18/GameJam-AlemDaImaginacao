@@ -136,6 +136,7 @@ public class PlayerScript : MonoBehaviour
     #region Interaction Variables
     
     private IInteractable _currentInteractable;
+    public IInteractable CurrentInteractable => _currentInteractable;
     private GameObject _heldObject;
     private float _pickUpTimer;
     private float _analyzeTimer;
@@ -154,8 +155,7 @@ public class PlayerScript : MonoBehaviour
         if (_animator == null) _animator = GetComponentInChildren<Animator>();
         if (_cam == null && Camera.main != null) _cam = Camera.main.transform;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+
     }
 
     private void OnEnable()
@@ -287,11 +287,13 @@ public class PlayerScript : MonoBehaviour
 
         if (!value && _currentTelekinesisObject != null) Release();
     }
-    
+
     private void OnScroll(Vector2 scroll)
     {
         if (State != PlayerState.Telekinesis) return;
         _scrollAmount = scroll;
+        
+        Debug.Log($"[SCROLL] {scroll}");
     }
 
     private void OnPointAction(Vector2 point)
@@ -485,7 +487,7 @@ public class PlayerScript : MonoBehaviour
     private void DetectInteractables()
     {
         if (_cam == null) return;
-        if (Status != PlayerStatus.Default || State != PlayerState.Telekinesis) return;
+        if (Status != PlayerStatus.Default  ) return;
 
         Vector3 sphereCenter = GetInteractionSphereCenter();
         
@@ -928,13 +930,16 @@ public class PlayerScript : MonoBehaviour
     {
         Ray ray = Camera.main.ScreenPointToRay(_pointerPosition);
 
+        // Atualiza o offset de profundidade baseado no scroll
         float scroll = _scrollAmount.y;
-        _depthOffset += scroll * _depthSpeed * Time.deltaTime;
+        _depthOffset += scroll * _depthSpeed;
         _depthOffset = Mathf.Clamp(_depthOffset, _depthLimits.x, _depthLimits.y);
 
+        // Calcula a posição base no raio
         Vector3 targetPos = ray.GetPoint(_holdDistance);
 
-        targetPos.z += _depthOffset;
+        // Adiciona o offset de profundidade na direção do raio (forward)
+        targetPos += ray.direction * _depthOffset;
 
         Vector3 dir = targetPos - _currentTelekinesisObject.transform.position;
 

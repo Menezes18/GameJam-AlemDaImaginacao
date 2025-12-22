@@ -154,16 +154,49 @@ public class DoorInteraction : MonoBehaviour, IInteractable
         Debug.Log($"🚪 [DOOR] Porta {(isOpen ? "ABERTA" : "FECHADA")}: {gameObject.name}");
     }
     
-    public void OpenDoor(PlayerScript player = null)
+    public void OpenDoor()
     {
-        if (isOpen) return;
-        ToggleDoor(player);
+        if (isOpen || isAnimating) return;
+        
+        isOpen = true;
+        isAnimating = useAnimation;
+        currentInteractingPlayer = null; // Não precisa de player
+        
+        if (!useAnimation)
+        {
+            transform.rotation = openRotation;
+            OnAnimationComplete();
+        }
+        
+        Debug.Log($"🚪 [DOOR] Porta ABERTA: {gameObject.name}");
     }
     
-    public void CloseDoor(PlayerScript player = null)
+    public void CloseDoor()
     {
-        if (!isOpen) return;
-        ToggleDoor(player);
+        if (!isOpen || isAnimating) return;
+        
+        isOpen = false;
+        isAnimating = useAnimation;
+        currentInteractingPlayer = null; // Não precisa de player
+        
+        if (!useAnimation)
+        {
+            transform.rotation = closedRotation;
+            OnAnimationComplete();
+        }
+        
+        Debug.Log($"🚪 [DOOR] Porta FECHADA: {gameObject.name}");
+    }
+    
+    // Versão com PlayerScript para compatibilidade (opcional)
+    public void OpenDoor(PlayerScript player)
+    {
+        OpenDoor();
+    }
+    
+    public void CloseDoor(PlayerScript player)
+    {
+        CloseDoor();
     }
     
     public bool IsOpen => isOpen;
