@@ -17,6 +17,7 @@ public class PlayerControlsSO : ScriptableObject {
     public event Action<Boolean> OnLeftClickAction;
     public event Action<Vector2> OnPointerAction;
     public event Action<Vector2> OnScrollAction;
+    public event Action OnAntClockwise;
 
     public void Move(Vector2 move, Vector2 raw) { OnMove?.Invoke(move, raw); }
     public void Look(Vector2 look) { OnLook?.Invoke(look); }
@@ -29,4 +30,5 @@ public class PlayerControlsSO : ScriptableObject {
     public void LeftClickAction(bool value) { OnLeftClickAction?.Invoke(value); }
     public void PointerPosition(Vector2 point) { OnPointerAction?.Invoke(point); }
     public void ScrollAction(Vector2 scroll) { OnScrollAction?.Invoke(scroll); }
+    public void AntClockwise() { OnAntClockwise?.Invoke(); }
 }

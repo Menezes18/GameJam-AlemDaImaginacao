@@ -30,10 +30,16 @@ public class PlayerInputSO : ScriptableObject{
     public event Action<CallbackContext> OnTelekinesis;
     public void Telekinesis(CallbackContext obj) {this.OnTelekinesis?.Invoke(obj);}
     
+    public event Action<CallbackContext> OnLeftClick;
+    public void LeftClick(CallbackContext obj) {this.OnLeftClick?.Invoke(obj);}
+
     public event Action<CallbackContext> OnPointerPosition;
-    public void PointAction(CallbackContext obj) {this.OnPointerPosition?.Invoke(obj);}
+    public void PointerPosition(CallbackContext obj) {this.OnPointerPosition?.Invoke(obj);}
     
     public event Action<CallbackContext> OnScrollAction;
     public void ScrollAction(CallbackContext obj) {this.OnScrollAction?.Invoke(obj);}
+
+    public event Action<CallbackContext> OnAntClockwise;
+    public void AntClockwise(CallbackContext obj) {this.OnAntClockwise?.Invoke(obj);}
 
 }

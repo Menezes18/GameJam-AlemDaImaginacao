@@ -113,6 +113,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "AntClock",
+                    "type": "Button",
+                    "id": "d11842df-3cda-49e8-bc0e-49dee5baa38d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -295,7 +304,7 @@
                 {
                     "name": "",
                     "id": "927985b8-fbf3-4a77-86e5-dd60e8cc6f33",
-                    "path": "<Mouse>/rightButton",
+                    "path": "<Keyboard>/z",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -333,6 +342,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "PointerPosition",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f31f1275-3a4b-463e-9bd6-7474e7d5c3ec",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AntClock",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

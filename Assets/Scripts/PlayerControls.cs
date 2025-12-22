@@ -27,8 +27,10 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO.OnAnalyze += PlayerInputSO_OnAnalyze;
         PlayerInputSO.OnTimeControl += PlayerInputSO_OnTimeControl;
         PlayerInputSO.OnTelekinesis += PlayerInputSO_OnTelekinesis;
+        PlayerInputSO.OnLeftClick += PlayerInputSO_OnLeftClick;
         PlayerInputSO.OnScrollAction += PlayerInputSO_OnScrollAction;
         PlayerInputSO.OnPointerPosition += PlayerInputSO_OnPointerPosition;
+        PlayerInputSO.OnAntClockwise += PlayerInputSO_OnAntClockwise;
     }
 
     private void OnDestroy(){
@@ -40,8 +42,10 @@ public class PlayerControls : MonoBehaviour {
         PlayerInputSO.OnAnalyze -= PlayerInputSO_OnAnalyze;
         PlayerInputSO.OnTimeControl -= PlayerInputSO_OnTimeControl;
         PlayerInputSO.OnTelekinesis -= PlayerInputSO_OnTelekinesis;
+        PlayerInputSO.OnLeftClick -= PlayerInputSO_OnLeftClick;
         PlayerInputSO.OnScrollAction -= PlayerInputSO_OnScrollAction;
         PlayerInputSO.OnPointerPosition -= PlayerInputSO_OnPointerPosition;
+        PlayerInputSO.OnAntClockwise -= PlayerInputSO_OnAntClockwise;
     }
     
     
@@ -106,16 +110,31 @@ public class PlayerControls : MonoBehaviour {
         _rawX = obj.x;
         _rawY = obj.y;
     }
-    private void Telekinesis(bool value){
-        if (playerScript.panel) return;
+    private void Telekinesis(bool value)
+    {
         PlayerControlsSO.Telekinesis(value);
     }
-    private void PointAction(Vector2 point){
+
+    private void PointAction(Vector2 point)
+    {
         PlayerControlsSO.PointerPosition(point);
     }
-    private void ScrollAction(Vector2 scroll){
+
+    private void LeftClick(bool value)
+    {
+        PlayerControlsSO.LeftClickAction(value);
+    }
+
+    private void ScrollAction(Vector2 scroll)
+    {
         PlayerControlsSO.ScrollAction(scroll);
     }
+
+    private void AntClockwise()
+    {
+        PlayerControlsSO.AntClockwise();
+    }
+
     public Vector2 GetInput()
     {
         return new Vector2(_x, _y);
@@ -202,10 +221,19 @@ public class PlayerControls : MonoBehaviour {
         if (playerScript.panel) return;
         if (obj.performed || obj.canceled) PointAction(obj.ReadValue<Vector2>());
     }
+    private void PlayerInputSO_OnLeftClick(CallbackContext obj)
+    {
+        if (playerScript.panel) return;
+        if (obj.performed || obj.canceled) LeftClick(obj.performed);
+    }
     private void PlayerInputSO_OnScrollAction(CallbackContext obj)
     {
         if (playerScript.panel) return;
         if (obj.performed || obj.canceled) ScrollAction(obj.ReadValue<Vector2>());
-        
+    }
+    private void PlayerInputSO_OnAntClockwise(CallbackContext obj)
+    {
+        if (playerScript.panel) return;
+        if (obj.performed) AntClockwise();
     }
 }
