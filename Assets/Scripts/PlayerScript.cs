@@ -5,8 +5,6 @@ public enum PlayerState
     Default,
     Ascend,
     Descend,
-    Stagger,
-    Roll,
     Death,
     Sleeping,
 }
@@ -68,7 +66,15 @@ public class PlayerScript : MonoBehaviour
             if (_state == value) return;
             OnStateChanged(_state, value);
             _state = value;
-            if (_animator != null) _animator.SetInteger(_STATE, (int)value);
+            if (_animator != null)
+            {
+                _animator.SetInteger(_STATE, (int)value);
+                Debug.Log($"✅ [ANIMATOR] Parâmetro 'state' definido para: {(int)value} ({(PlayerState)value})");
+            }
+            else
+            {
+                Debug.LogWarning("⚠️ [ANIMATOR] Tentativa de atualizar animator, mas _animator é null!");
+            }
         }
     }
 
@@ -103,20 +109,6 @@ public class PlayerScript : MonoBehaviour
     
     #endregion
 
-    #region Roll Variables
-    
-    private Vector3 _rollDir = Vector3.forward;
-    private float _rollTimer;
-    private float _rollCooldown;
-    
-    #endregion
-
-    #region Stagger Variables
-    
-    private float _staggerTimer;
-    
-    #endregion
-
     #region Animator Hashes
     
     private static readonly int _STATE = Animator.StringToHash("state");
@@ -134,6 +126,8 @@ public class PlayerScript : MonoBehaviour
     private float _analyzeTimer;
     private const float PICKUP_DURATION = 0.5f;
     private const float ANALYZE_DURATION = 2f;
+    private float _lastPickUpInputTime = -1f;
+    private const float PICKUP_INPUT_COOLDOWN = 0.2f;
     
     #endregion
 
@@ -155,7 +149,6 @@ public class PlayerScript : MonoBehaviour
         PlayerControlsSO.OnMove += OnMove;
         PlayerControlsSO.OnLook += OnLook;
         PlayerControlsSO.OnJump += OnJump;
-        PlayerControlsSO.OnRoll += OnRoll;
         PlayerControlsSO.OnPickUp += OnPickUp;
         PlayerControlsSO.OnAnalyze += OnAnalyze;
     }
@@ -166,7 +159,6 @@ public class PlayerScript : MonoBehaviour
         PlayerControlsSO.OnMove -= OnMove;
         PlayerControlsSO.OnLook -= OnLook;
         PlayerControlsSO.OnJump -= OnJump;
-        PlayerControlsSO.OnRoll -= OnRoll;
         PlayerControlsSO.OnPickUp -= OnPickUp;
         PlayerControlsSO.OnAnalyze -= OnAnalyze;
     }
@@ -178,7 +170,8 @@ public class PlayerScript : MonoBehaviour
         
         if (State == PlayerState.Sleeping)
         {
-            UpdateAnimator();
+            // Quando está dormindo, bloqueia qualquer rotação no transform principal
+            // A animação controla a rotação através do root motion ou do modelo visual
             return;
         }
         
@@ -186,15 +179,24 @@ public class PlayerScript : MonoBehaviour
 
         PickUpBehaviour();
         AnalyzeBehaviour();
-        StaggerBehaviour();
-        RollBehaviour();
         AerialBehaviour();
         DefaultBehaviour();
 
-        UpdateAnimator();
+
         ApplyGravity();
         MoveCharacter();
         UpdateCharacterRotation();
+    }
+    
+    private void LateUpdate()
+    {
+        // Garante que quando está dormindo, nenhuma rotação seja aplicada no transform principal
+        // A animação deve controlar apenas o modelo visual (playerModel), não o transform principal
+        if (State == PlayerState.Sleeping)
+        {
+            // Mantém a rotação atual (não permite que seja alterada)
+            // Se necessário, você pode forçar uma rotação específica aqui
+        }
     }
     
     #endregion
@@ -204,7 +206,9 @@ public class PlayerScript : MonoBehaviour
     private void OnMove(Vector2 input, Vector2 raw)
     {
         _raw = new Vector3(raw.x, 0f, raw.y);
-        _input = new Vector3(input.x, 0f, input.y);
+        _input = new Vector3(input.x, 0, input.y);
+        _animator.SetFloat("x", input.x);
+        _animator.SetFloat("y", input.y);
     }
 
     private void OnLook(Vector2 look)
@@ -225,23 +229,6 @@ public class PlayerScript : MonoBehaviour
         InertiaCap = _inertia.magnitude;
     }
 
-    private void OnRoll()
-    {
-        if (panel) return;
-        if (State == PlayerState.Stagger || State == PlayerState.Death) return;
-        if (_rollCooldown > 0f) return;
-        if (State == PlayerState.Ascend || State == PlayerState.Descend) return;
-
-        Vector3 dir = CalculateCameraRelativeMovement();
-        if (dir.sqrMagnitude < 0.0001f)
-        {
-            dir = transform.forward;
-        }
-        _rollDir = dir.normalized;
-        _rollTimer = db != null ? db.playerRollDuration : 0.35f;
-        State = PlayerState.Roll;
-    }
-    
     #endregion
 
     #region 2.5D Movement System
@@ -295,9 +282,6 @@ public class PlayerScript : MonoBehaviour
     
     private void UpdateTimers()
     {
-        if (_rollTimer > 0f) _rollTimer -= Time.deltaTime;
-        if (_rollCooldown > 0f) _rollCooldown -= Time.deltaTime;
-        if (_staggerTimer > 0f) _staggerTimer -= Time.deltaTime;
         if (_pickUpTimer > 0f) _pickUpTimer -= Time.deltaTime;
         if (_analyzeTimer > 0f) _analyzeTimer -= Time.deltaTime;
     }
@@ -326,7 +310,8 @@ public class PlayerScript : MonoBehaviour
     
     private void AerialDetection()
     {
-        if (State == PlayerState.Death || State == PlayerState.Stagger || State == PlayerState.Roll) return;
+        if (State == PlayerState.Death) return;
+
 
         if (_move.y > 0f) State = PlayerState.Ascend;
         else if (_move.y < (db != null ? db.gravityGrounded : -1f)) State = PlayerState.Descend;
@@ -367,70 +352,22 @@ public class PlayerScript : MonoBehaviour
         _move.y = vertical;
     }
 
-    private void RollBehaviour()
-    {
-        if (State != PlayerState.Roll) return;
-
-        float vertical = _move.y;
-        float t = Mathf.Clamp01(_rollTimer / Mathf.Max(0.0001f, (db != null ? db.playerRollDuration : 0.35f)));
-        float curve = db != null && db.playerRollCurve != null ? db.playerRollCurve.Evaluate(1f - t) : 1f - t;
-        float speed = (db != null ? db.playerRollSpeed : 6f) * curve;
-
-        Vector3 horizontal = _rollDir * speed;
-        _move = new Vector3(horizontal.x, vertical, horizontal.z);
-
-        if (_rollTimer <= 0f)
-        {
-            State = PlayerState.Default;
-            _rollCooldown = db != null ? db.playerRollCooldownDuration : 0.5f;
-        }
-    }
-
-    private void StaggerBehaviour()
-    {
-        if (State != PlayerState.Stagger) return;
-
-        float vertical = _move.y;
-        Vector3 moveDirection = CalculateCameraRelativeMovement();
-
-        if (_staggerTimer > 0f) moveDirection = Vector3.zero;
-
-        float airSpeed = (db != null ? db.playerAirSpeed : 2.5f) * 0.6f;
-        moveDirection *= airSpeed * Time.deltaTime;
-
-        _inertia += moveDirection;
-        _inertia = Vector3.ClampMagnitude(_inertia, InertiaCap);
-
-        _move = _inertia;
-        _move.y = vertical;
-
-        if (_staggerTimer > 0f) return;
-        if (_controller != null && !_controller.isGrounded) return;
-        State = PlayerState.Default;
-    }
-    
     #endregion
 
-    #region Animation
-    
-    private void UpdateAnimator()
-    {
-        if (_animator != null)
-        {
-            _animator.SetFloat(_MOVEX, _input.x, 0.1f, Time.deltaTime);
-            _animator.SetFloat(_MOVEY, _input.z, 0.1f, Time.deltaTime);
-        }
-    }
-    
-    #endregion
 
     #region State Management
     
     private void OnStateChanged(PlayerState oldState, PlayerState newState)
     {
-        if (oldState == PlayerState.Roll)
+        Debug.Log($"🔄 [STATE] {oldState} → {newState}");
+        
+        if (_animator != null)
         {
-            _rollCooldown = db != null ? db.playerRollCooldownDuration : 0.5f;
+            Debug.Log($"🎬 [ANIMATOR] Atualizando parâmetro 'state' para: {(int)newState}");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ [ANIMATOR] Animator é null!");
         }
     }
 
@@ -483,6 +420,11 @@ public class PlayerScript : MonoBehaviour
         foreach (Collider col in colliders)
         {
             if (col == null || col.gameObject == null) continue;
+            
+            if (_heldObject != null && col.gameObject == _heldObject)
+            {
+                continue;
+            }
             
             if (debugInteraction)
             {
@@ -632,7 +574,14 @@ public class PlayerScript : MonoBehaviour
     private void OnPickUp()
     {
         if (panel) return;
-        if (State == PlayerState.Death || State == PlayerState.Stagger) return;
+        if (State == PlayerState.Death) return;
+
+        float currentTime = Time.time;
+        if (currentTime - _lastPickUpInputTime < PICKUP_INPUT_COOLDOWN)
+        {
+            return;
+        }
+        _lastPickUpInputTime = currentTime;
 
         if (State == PlayerState.Sleeping)
         {
@@ -689,6 +638,8 @@ public class PlayerScript : MonoBehaviour
         {
             _heldObject = pickable.GetGameObject();
             AttachObjectToPlayer(_heldObject);
+            _currentInteractable = null;
+            _lastPickUpInputTime = Time.time;
             Debug.Log($"✅ [PICKUP] Objeto pegado com sucesso: {_heldObject.name}");
         }
     }
@@ -697,7 +648,7 @@ public class PlayerScript : MonoBehaviour
     {
         if (panel) return;
         if (Status != PlayerStatus.Default) return;
-        if (State == PlayerState.Death || State == PlayerState.Stagger) return;
+        if (State == PlayerState.Death) return;
 
         if (_heldObject != null)
         {
@@ -726,20 +677,22 @@ public class PlayerScript : MonoBehaviour
     {
         if (Status != PlayerStatus.PickingUp) return;
 
-        _input = Vector3.zero;
-
         if (_pickUpTimer <= 0f)
         {
-            Status = PlayerStatus.Default;
-            Debug.Log("✅ [PICKUP] Objeto pego com sucesso!");
+            if (_heldObject != null)
+            {
+                Status = PlayerStatus.PickingUp;
+            }
+            else
+            {
+                Status = PlayerStatus.Default;
+            }
         }
     }
 
     private void AnalyzeBehaviour()
     {
         if (Status != PlayerStatus.Analyzing) return;
-
-        _input *= 0.3f;
 
         if (_analyzeTimer <= 0f)
         {
@@ -847,9 +800,13 @@ public class PlayerScript : MonoBehaviour
 
     public void SetLyingDown(bool lyingDown)
     {
+        if (State == PlayerState.Sleeping)
+        {
+            return;
+        }
+        
         Transform modelToRotate = playerModel;
         
-              
         if (modelToRotate != null)
         {
             if (lyingDown)
